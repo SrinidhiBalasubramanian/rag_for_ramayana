@@ -81,7 +81,7 @@ class Query:
             tulsidas_results
         )
 
-        self.log(valmiki_results, tulsidas_results, rag_response, token_usage)
+        self.log(valmiki_results, tulsidas_results, rag_response, token_usage)  
 
         valmiki_sources = self.get_sources(
             [result.metadata for result in valmiki_results], 
@@ -92,12 +92,10 @@ class Query:
             RAMAYANA_VERSIONS.TULSIDAS
         )
 
-        # final_response = self.make_output(
-        #     rag_response, 
-        #     valmiki_sources, 
-        #     tulsidas_sources
-        # )
+        final_response = self.make_output(
+            rag_response, 
+            valmiki_sources, 
+            tulsidas_sources
+        )
 
-        # return final_response
-
-        return rag_response, valmiki_sources, tulsidas_sources
+        return final_response
