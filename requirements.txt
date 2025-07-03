@@ -1,0 +1,6 @@
+chromadb==0.4.14
+posthog==2.4.2
+streamlit==1.33.0
+tiktoken
+pymongo 
+python-dotenv

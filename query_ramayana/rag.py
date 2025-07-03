@@ -1,0 +1,69 @@
+from urllib import response
+from openai import OpenAI
+
+from config import OPENAI_API_KEY, EmbeddingResult, Prompts
+from utils import Tools
+
+logger = Tools.setup_logger("query_ramayana")
+safe_run = Tools.safe_run
+
+class RAG:
+    def __init__(self, query):
+        self.query = query
+        self.openai = OpenAI(api_key = OPENAI_API_KEY)
+
+    @safe_run(default_return=Prompts.RAG_PROMPT)
+    def get_prompt(self, 
+                   valmiki_results: EmbeddingResult, 
+                   tulsidas_results: EmbeddingResult) -> str:
+        
+        valmiki_trans = ""
+        tulsi_trans = ""
+        count = len(valmiki_results)
+        for v_result, t_result in zip(valmiki_results, tulsidas_results):
+            valmiki_trans += str(v_result.document)
+            tulsi_trans += str(t_result.document)
+        contexts = {
+            "query": self.query,
+            "no_contexts": count,
+            "valmiki_extract": valmiki_trans,
+            "tulsidas_extract": tulsi_trans,
+        }
+
+        return Prompts.RAG_PROMPT.format(**contexts)
+
+    @safe_run(default_return="")
+    def get_answer(self, prompt: str) -> str:
+
+        completion = self.openai.chat.completions.create(
+            model="gpt-4o-2024-08-06",
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "You are a traditional expert on Ramayana. Assist in the below mentioned tasks"
+                },
+                {
+                    "role": "user", 
+                    "content": prompt
+                }
+            ]
+        )
+
+        return completion
+    
+    def parse_response(self, response) -> str:
+
+        answer = response.choices[0].message.content
+        token_usage = response.usage.total_tokens if response.usage else 0
+
+        return answer.strip(), token_usage
+
+    @safe_run(default_return=("An error occurred while processing your query.", 0))
+    def run(self, 
+            valmiki_results: EmbeddingResult, 
+            tulsidas_results: EmbeddingResult) -> str:
+        
+        prompt = self.get_prompt(valmiki_results, tulsidas_results)
+        response = self.get_answer(prompt)
+        answer, token_usage = self.parse_response(response)
+        return answer, token_usage
