@@ -1,7 +1,7 @@
 from urllib import response
 from openai import OpenAI
 
-from config import OPENAI_API_KEY, EmbeddingResult, Prompts
+from config import OPENAI_API_KEY, EmbeddingResult, Prompts, FinalResponse
 from utils import Tools
 
 logger = Tools.setup_logger("query_ramayana")
@@ -17,17 +17,17 @@ class RAG:
                    valmiki_results: EmbeddingResult, 
                    tulsidas_results: EmbeddingResult) -> str:
         
-        valmiki_trans = ""
-        tulsi_trans = ""
+        valmiki_trans = {}
+        tulsi_trans = {}
         count = len(valmiki_results)
-        for v_result, t_result in zip(valmiki_results, tulsidas_results):
-            valmiki_trans += str(v_result.document)
-            tulsi_trans += str(t_result.document)
+        for ix, (v_result, t_result) in enumerate(zip(valmiki_results, tulsidas_results)):
+            valmiki_trans[ix] = str(v_result.document)
+            tulsi_trans[ix] = str(t_result.document)
         contexts = {
             "query": self.query,
             "no_contexts": count,
-            "valmiki_extract": valmiki_trans,
-            "tulsidas_extract": tulsi_trans,
+            "valmiki_extract": str(valmiki_trans),
+            "tulsidas_extract": str(tulsi_trans),
         }
 
         return Prompts.RAG_PROMPT.format(**contexts)
@@ -35,7 +35,7 @@ class RAG:
     @safe_run(default_return="")
     def get_answer(self, prompt: str) -> str:
 
-        completion = self.openai.chat.completions.create(
+        completion = self.openai.beta.chat.completions.parse(
             model="gpt-4o-2024-08-06",
             messages=[
                 {
@@ -46,15 +46,19 @@ class RAG:
                     "role": "user", 
                     "content": prompt
                 }
-            ]
+            ],
+            response_format=FinalResponse,
+            temperature=0
         )
 
         return completion
     
     def parse_response(self, response) -> str:
 
-        answer = response.choices[0].message.content
-        token_usage = response.usage.total_tokens if response.usage else 0
+        response_parsed = response.choices[0].message.parsed
+
+        answer = response_parsed.response
+        token_usage = response_parsed.usage.total_tokens if response.usage else 0
 
         return answer.strip(), token_usage
 
@@ -65,5 +69,4 @@ class RAG:
         
         prompt = self.get_prompt(valmiki_results, tulsidas_results)
         response = self.get_answer(prompt)
-        answer, token_usage = self.parse_response(response)
-        return answer, token_usage
+        return response

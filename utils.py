@@ -4,6 +4,7 @@ import logging
 
 import traceback
 
+from ast import literal_eval
 from datetime import datetime
 from functools import wraps
 from typing import Callable, Any
@@ -19,6 +20,12 @@ class Tools:
             data = json.load(file)
         return data
     
+    @staticmethod
+    def parse(text):
+        if isinstance(text, str):
+            return literal_eval(text)
+        return text
+
     @staticmethod
     def setup_logger(name: str = "rag_for_ramayana"):
         logger = logging.getLogger(name)
