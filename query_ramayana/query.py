@@ -1,6 +1,3 @@
-import ast
-from typing import List, Dict
-
 from query_ramayana.rag import RAG
 from query_ramayana.embeddings import EmbeddingStore
 from query_ramayana.data_processing import DataProcessing

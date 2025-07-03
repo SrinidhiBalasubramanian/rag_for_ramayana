@@ -1,4 +1,3 @@
-from urllib import response
 from openai import OpenAI
 
 from config import OPENAI_API_KEY, EmbeddingResult, Prompts, FinalResponse
